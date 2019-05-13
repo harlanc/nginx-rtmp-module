@@ -46,6 +46,7 @@ static ngx_rtmp_relay_ctx_t * ngx_rtmp_relay_create_connection(
 
 typedef struct {
     ngx_array_t                 pulls;         /* ngx_rtmp_relay_target_t * */
+    ngx_uint_t                  pullsidx;
     ngx_array_t                 pushes;        /* ngx_rtmp_relay_target_t * */
     ngx_array_t                 static_pulls;  /* ngx_rtmp_relay_target_t * */
     ngx_array_t                 static_events; /* ngx_event_t * */
@@ -703,49 +704,61 @@ next:
     return next_publish(s, v);
 }
 
-
-static ngx_int_t
-ngx_rtmp_relay_play(ngx_rtmp_session_t *s, ngx_rtmp_play_t *v)
+static void
+ngx_rtmp_relay_play2(ngx_rtmp_session_t *s,ngx_str_t *name)
 {
+
     ngx_rtmp_relay_app_conf_t      *racf;
     ngx_rtmp_relay_target_t        *target, **t;
-    ngx_str_t                       name;
+
     size_t                          n;
     ngx_rtmp_relay_ctx_t           *ctx;
 
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_relay_module);
     if (ctx && s->relay) {
-        goto next;
+        return;
     }
 
     racf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_relay_module);
+    racf->pulls.pullsidx = 0;
     if (racf == NULL || racf->pulls.nelts == 0) {
-        goto next;
+        return;
     }
 
-    name.len = ngx_strlen(v->name);
-    name.data = v->name;
-
     t = racf->pulls.elts;
-    for (n = 0; n < racf->pulls.nelts; ++n, ++t) {
+
+    //for (n = 0; n < racf->pulls.nelts; ++n, ++t) {
+    for (n = racf->pullsidx; n < racf->pulls.nelts; ++n, ++t，racf->pullsidx++) {
         target = *t;
 
-        if (target->name.len && (name.len != target->name.len ||
-            ngx_memcmp(name.data, target->name.data, name.len)))
+        if (target->name.len && (name->len != target->name.len ||
+            ngx_memcmp(name->data, target->name.data, name->len)))
         {
             continue;
         }
 
-        if (ngx_rtmp_relay_pull(s, &name, target) == NGX_OK) {
-            continue;
+        if (ngx_rtmp_relay_pull(s, name, target) == NGX_OK) {
+            //continue;
+            break;
         }
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                 "relay: pull failed name='%V' app='%V' "
                 "playpath='%V' url='%V'",
-                &name, &target->app, &target->play_path,
+                name, &target->app, &target->play_path,
                 &target->url.url);
     }
+}
+
+
+static ngx_int_t
+ngx_rtmp_relay_play(ngx_rtmp_session_t *s, ngx_rtmp_play_t *v)
+{
+    ngx_str_t                       name;
+    name.len = ngx_strlen(v->name);
+    name.data = v->name;
+
+    ngx_rtmp_relay_play2(s,&name);
 
 next:
     return next_play(s, v);
@@ -1381,6 +1394,11 @@ ngx_rtmp_relay_close(ngx_rtmp_session_t *s)
 
         ctx->publish = NULL;
 
+        ngx_str_t name;
+        name.len = ngx_strlen(&ctx->name);
+        name.data = &ctx->name;
+        ngx_rtmp_relay_play2(s,&name)
+
         return;
     }
 
@@ -1408,6 +1426,11 @@ ngx_rtmp_relay_close(ngx_rtmp_session_t *s)
     if (*cctx) {
         *cctx = ctx->next;
     }
+
+    ngx_str_t name;
+    name.len = ngx_strlen(&ctx->name);
+    name.data = &ctx->name;
+    ngx_rtmp_relay_play2(s,&name)
 }
 
 
