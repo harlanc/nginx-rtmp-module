@@ -159,6 +159,9 @@ ngx_module_t  ngx_rtmp_relay_module = {
 static void *
 ngx_rtmp_relay_create_app_conf(ngx_conf_t *cf)
 {
+
+
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0,"===========ngx_rtmp_relay_create_app_conf");
     ngx_rtmp_relay_app_conf_t     *racf;
 
     racf = ngx_pcalloc(cf->pool, sizeof(ngx_rtmp_relay_app_conf_t));
@@ -200,6 +203,7 @@ ngx_rtmp_relay_create_app_conf(ngx_conf_t *cf)
 static char *
 ngx_rtmp_relay_merge_app_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0,"===============ngx_rtmp_relay_merge_app_conf");
     ngx_rtmp_relay_app_conf_t  *prev = parent;
     ngx_rtmp_relay_app_conf_t  *conf = child;
 
@@ -322,6 +326,7 @@ typedef ngx_rtmp_relay_ctx_t * (* ngx_rtmp_relay_create_ctx_pt)
 static ngx_int_t
 ngx_rtmp_relay_copy_str(ngx_pool_t *pool, ngx_str_t *dst, ngx_str_t *src)
 {
+     ngx_log_error(NGX_LOG_INFO, pool->log, 0,"==============ngx_rtmp_relay_copy_str");
     if (src->len == 0) {
         return NGX_OK;
     }
@@ -339,6 +344,7 @@ static ngx_rtmp_relay_ctx_t *
 ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
         ngx_rtmp_relay_target_t *target)
 {
+
     ngx_rtmp_relay_app_conf_t      *racf;
     ngx_rtmp_relay_ctx_t           *rctx;
     ngx_rtmp_addr_conf_t           *addr_conf;
@@ -354,6 +360,7 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
 
     racf = ngx_rtmp_get_module_app_conf(cctx, ngx_rtmp_relay_module);
 
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection");
     ngx_log_debug0(NGX_LOG_DEBUG_RTMP, racf->log, 0,
                    "relay: create remote context");
 
@@ -439,6 +446,9 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
         }
     }
 
+
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection0");
+
     pc = ngx_pcalloc(pool, sizeof(ngx_peer_connection_t));
     if (pc == NULL) {
         goto clear;
@@ -450,6 +460,7 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
         goto clear;
     }
 
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection1");
     /* get address */
     addr = &target->url.addrs[target->counter % target->url.naddrs];
     target->counter++;
@@ -467,6 +478,7 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
     }
     ngx_memcpy(pc->sockaddr, addr->sockaddr, pc->socklen);
 
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection2");
     rc = ngx_event_connect_peer(pc);
     if (rc != NGX_OK && rc != NGX_AGAIN ) {
         ngx_log_debug0(NGX_LOG_DEBUG_RTMP, racf->log, 0,
@@ -490,11 +502,14 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
     addr_ctx->srv_conf  = cctx->srv_conf;
     ngx_str_set(&addr_conf->addr_text, "ngx-relay");
 
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection3");
     rs = ngx_rtmp_init_session(c, addr_conf);
     if (rs == NULL) {
         /* no need to destroy pool */
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection3.1");
         return NULL;
     }
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection3.2");
     rs->app_conf = cctx->app_conf;
     rs->relay = 1;
     rctx->session = rs;
@@ -509,6 +524,8 @@ ngx_rtmp_relay_create_connection(ngx_rtmp_conf_ctx_t *cctx, ngx_str_t* name,
     return rctx;
 
 clear:
+  
+     ngx_log_error(NGX_LOG_INFO, racf->log, 0,"=============ngx_rtmp_relay_create_connection4");
     if (pool) {
         ngx_destroy_pool(pool);
     }
@@ -520,6 +537,7 @@ static ngx_rtmp_relay_ctx_t *
 ngx_rtmp_relay_create_remote_ctx(ngx_rtmp_session_t *s, ngx_str_t* name,
         ngx_rtmp_relay_target_t *target)
 {
+       ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"===============ngx_rtmp_relay_create_remote_ctx");
     ngx_rtmp_conf_ctx_t         cctx;
 
     cctx.app_conf = s->app_conf;
@@ -534,6 +552,7 @@ static ngx_rtmp_relay_ctx_t *
 ngx_rtmp_relay_create_local_ctx(ngx_rtmp_session_t *s, ngx_str_t *name,
         ngx_rtmp_relay_target_t *target)
 {
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"====================ngx_rtmp_relay_create_local_ctx");
     ngx_rtmp_relay_ctx_t           *ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
@@ -573,6 +592,8 @@ ngx_rtmp_relay_create(ngx_rtmp_session_t *s, ngx_str_t *name,
         ngx_rtmp_relay_create_ctx_pt create_publish_ctx,
         ngx_rtmp_relay_create_ctx_pt create_play_ctx)
 {
+
+    ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"=====================ngx_rtmp_relay_create");
     ngx_rtmp_relay_app_conf_t      *racf;
     ngx_rtmp_relay_ctx_t           *publish_ctx, *play_ctx, **cctx;
     ngx_uint_t                      hash;
@@ -652,6 +673,8 @@ ngx_rtmp_relay_push(ngx_rtmp_session_t *s, ngx_str_t *name,
 static ngx_int_t
 ngx_rtmp_relay_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 {
+
+      ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"==============ngx_rtmp_relay_publish");
     ngx_rtmp_relay_app_conf_t      *racf;
     ngx_rtmp_relay_target_t        *target, **t;
     ngx_str_t                       name;
@@ -754,6 +777,8 @@ ngx_rtmp_relay_play2(ngx_rtmp_session_t *s,ngx_str_t *name)
 static ngx_int_t
 ngx_rtmp_relay_play(ngx_rtmp_session_t *s, ngx_rtmp_play_t *v)
 {
+
+      ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"=================ngx_rtmp_relay_play");
     ngx_str_t                       name;
     name.len = ngx_strlen(v->name);
     name.data = v->name;
@@ -776,6 +801,9 @@ next:
 static ngx_int_t
 ngx_rtmp_relay_play_local(ngx_rtmp_session_t *s)
 {
+
+
+        ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"==================ngx_rtmp_relay_play_local");
     ngx_rtmp_play_t             v;
     ngx_rtmp_relay_ctx_t       *ctx;
 
@@ -796,6 +824,8 @@ ngx_rtmp_relay_play_local(ngx_rtmp_session_t *s)
 static ngx_int_t
 ngx_rtmp_relay_publish_local(ngx_rtmp_session_t *s)
 {
+
+    ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"==============ngx_rtmp_relay_publish_local");
     ngx_rtmp_publish_t          v;
     ngx_rtmp_relay_ctx_t       *ctx;
 
@@ -816,6 +846,9 @@ ngx_rtmp_relay_publish_local(ngx_rtmp_session_t *s)
 static ngx_int_t
 ngx_rtmp_relay_send_connect(ngx_rtmp_session_t *s)
 {
+
+
+    ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"==================ngx_rtmp_relay_send_connect");
     static double               trans = NGX_RTMP_RELAY_CONNECT_TRANS;
     static double               acodecs = 3575;
     static double               vcodecs = 252;
@@ -949,6 +982,8 @@ ngx_rtmp_relay_send_connect(ngx_rtmp_session_t *s)
 static ngx_int_t
 ngx_rtmp_relay_send_create_stream(ngx_rtmp_session_t *s)
 {
+
+   ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"=================ngx_rtmp_relay_send_create_stream");
     static double               trans = NGX_RTMP_RELAY_CREATE_STREAM_TRANS;
 
     static ngx_rtmp_amf_elt_t   out_elts[] = {
@@ -981,6 +1016,7 @@ ngx_rtmp_relay_send_create_stream(ngx_rtmp_session_t *s)
 static ngx_int_t
 ngx_rtmp_relay_send_publish(ngx_rtmp_session_t *s)
 {
+    ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"===================ngx_rtmp_relay_send_publish");
     static double               trans;
 
     static ngx_rtmp_amf_elt_t   out_elts[] = {
@@ -1036,6 +1072,9 @@ ngx_rtmp_relay_send_publish(ngx_rtmp_session_t *s)
 static ngx_int_t
 ngx_rtmp_relay_send_play(ngx_rtmp_session_t *s)
 {
+
+        ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"====================ngx_rtmp_relay_send_play");
+
     static double               trans;
     static double               start, duration;
 
@@ -1111,6 +1150,8 @@ static ngx_int_t
 ngx_rtmp_relay_on_result(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_chain_t *in)
 {
+
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"====================ngx_rtmp_relay_on_result");
     ngx_rtmp_relay_ctx_t       *ctx;
     static struct {
         double                  trans;
@@ -1194,6 +1235,7 @@ static ngx_int_t
 ngx_rtmp_relay_on_error(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_chain_t *in)
 {
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"================ngx_rtmp_relay_on_error");
     ngx_rtmp_relay_ctx_t       *ctx;
     static struct {
         double                  trans;
@@ -1257,6 +1299,8 @@ static ngx_int_t
 ngx_rtmp_relay_on_status(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_chain_t *in)
 {
+
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"==================ngx_rtmp_relay_on_status");
     ngx_rtmp_relay_ctx_t       *ctx;
     static struct {
         double                  trans;
@@ -1329,6 +1373,7 @@ static ngx_int_t
 ngx_rtmp_relay_handshake_done(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_chain_t *in)
 {
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"===============ngx_rtmp_relay_handshake_done");
     ngx_rtmp_relay_ctx_t   *ctx;
 
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_relay_module);
@@ -1343,6 +1388,8 @@ ngx_rtmp_relay_handshake_done(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
 static void
 ngx_rtmp_relay_close(ngx_rtmp_session_t *s)
 {
+
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"====================ngx_rtmp_relay_close");
     ngx_rtmp_relay_app_conf_t          *racf;
     ngx_rtmp_relay_ctx_t               *ctx, **cctx;
     ngx_uint_t                          hash;
@@ -1442,6 +1489,7 @@ ngx_rtmp_relay_close(ngx_rtmp_session_t *s)
 static ngx_int_t
 ngx_rtmp_relay_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
 {
+      ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"===================ngx_rtmp_relay_close_stream");
     ngx_rtmp_relay_app_conf_t  *racf;
 
     racf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_relay_module);
@@ -1456,6 +1504,8 @@ ngx_rtmp_relay_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
 static ngx_int_t
 ngx_rtmp_relay_delete_stream(ngx_rtmp_session_t *s, ngx_rtmp_delete_stream_t *v)
 {
+
+     ngx_log_error(NGX_LOG_INFO, s->connection->log, 0,"===============ngx_rtmp_relay_delete_stream");
     ngx_rtmp_relay_close(s);
 
     return next_delete_stream(s, v);
@@ -1465,6 +1515,8 @@ ngx_rtmp_relay_delete_stream(ngx_rtmp_session_t *s, ngx_rtmp_delete_stream_t *v)
 static char *
 ngx_rtmp_relay_push_pull(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
+ ngx_log_error(NGX_LOG_INFO, cf->log, 0,"===================ngx_rtmp_relay_push_pull");
+
     ngx_str_t                          *value, v, n;
     ngx_rtmp_relay_app_conf_t          *racf;
     ngx_rtmp_relay_target_t            *target, **t;
@@ -1625,6 +1677,8 @@ ngx_rtmp_relay_push_pull(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static ngx_int_t
 ngx_rtmp_relay_init_process(ngx_cycle_t *cycle)
 {
+
+ ngx_log_error(NGX_LOG_INFO, cycle->log, 0,"=============ngx_rtmp_relay_init_process");
 #if !(NGX_WIN32)
     ngx_rtmp_core_main_conf_t  *cmcf = ngx_rtmp_core_main_conf;
     ngx_rtmp_core_srv_conf_t  **pcscf, *cscf;
@@ -1678,6 +1732,8 @@ ngx_rtmp_relay_init_process(ngx_cycle_t *cycle)
 static ngx_int_t
 ngx_rtmp_relay_postconfiguration(ngx_conf_t *cf)
 {
+
+  ngx_log_error(NGX_LOG_INFO, cf->log, 0,"================ngx_rtmp_relay_postconfiguration");
     ngx_rtmp_core_main_conf_t          *cmcf;
     ngx_rtmp_handler_pt                *h;
     ngx_rtmp_amf_handler_t             *ch;
