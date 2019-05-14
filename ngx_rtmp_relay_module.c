@@ -720,7 +720,6 @@ ngx_rtmp_relay_play2(ngx_rtmp_session_t *s,ngx_str_t *name)
     }
 
     racf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_relay_module);
-    racf->pulls.pullsidx = 0;
     if (racf == NULL || racf->pulls.nelts == 0) {
         return;
     }
@@ -728,8 +727,8 @@ ngx_rtmp_relay_play2(ngx_rtmp_session_t *s,ngx_str_t *name)
     t = racf->pulls.elts;
 
     //for (n = 0; n < racf->pulls.nelts; ++n, ++t) {
-    for (n = racf->pullsidx; n < racf->pulls.nelts; ++n, ++t，racf->pullsidx++) {
-        target = *t;
+    for (n = racf->pullsidx; n < racf->pulls.nelts; ++n, ++t,racf->pullsidx++) {
+        target = t[n];
 
         if (target->name.len && (name->len != target->name.len ||
             ngx_memcmp(name->data, target->name.data, name->len)))
@@ -739,6 +738,7 @@ ngx_rtmp_relay_play2(ngx_rtmp_session_t *s,ngx_str_t *name)
 
         if (ngx_rtmp_relay_pull(s, name, target) == NGX_OK) {
             //continue;
+            racf->pullsidx++;
             break;
         }
 
@@ -757,6 +757,14 @@ ngx_rtmp_relay_play(ngx_rtmp_session_t *s, ngx_rtmp_play_t *v)
     ngx_str_t                       name;
     name.len = ngx_strlen(v->name);
     name.data = v->name;
+
+
+     ngx_rtmp_relay_app_conf_t      *racf;
+    racf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_relay_module);
+    racf->pullsidx = 0;
+    if (racf == NULL || racf->pulls.nelts == 0) {
+        goto next;
+    }
 
     ngx_rtmp_relay_play2(s,&name);
 
@@ -1394,10 +1402,10 @@ ngx_rtmp_relay_close(ngx_rtmp_session_t *s)
 
         ctx->publish = NULL;
 
-        ngx_str_t name;
-        name.len = ngx_strlen(&ctx->name);
-        name.data = &ctx->name;
-        ngx_rtmp_relay_play2(s,&name)
+        //ngx_str_t name;
+        //name.len = ngx_strlen(&ctx->name);
+        //name.data = ctx->name;
+        ngx_rtmp_relay_play2(s,&ctx->name);
 
         return;
     }
@@ -1427,10 +1435,7 @@ ngx_rtmp_relay_close(ngx_rtmp_session_t *s)
         *cctx = ctx->next;
     }
 
-    ngx_str_t name;
-    name.len = ngx_strlen(&ctx->name);
-    name.data = &ctx->name;
-    ngx_rtmp_relay_play2(s,&name)
+    ngx_rtmp_relay_play2(s,&ctx->name);
 }
 
 
